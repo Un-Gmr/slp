@@ -1,230 +1,144 @@
--- CYBERCORE // CC:TWEAKED
--- No peripherals required
+-- CYBERCORE // MONITOR DASHBOARD
+-- Designed for CC:Tweaked Advanced Monitors
+
+local monitor = peripheral.find("monitor")
+
+if not monitor then
+    print("ERROR: No monitor found.")
+    return
+end
+
+monitor.setTextScale(0.5)
+term.redirect(monitor)
 
 local w, h = term.getSize()
-local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*"
-local running = true
 
-math.randomseed(os.epoch("utc"))
-
-local function randChar()
-    local n = math.random(#chars)
-    return chars:sub(n, n)
-end
-
-local function center(y, text)
-    local x = math.floor((w - #text) / 2) + 1
-    term.setCursorPos(math.max(1, x), y)
-    write(text)
-end
-
-local function bar(x, y, width, percent)
-    term.setCursorPos(x, y)
-    write("[")
-    local filled = math.floor(width * percent)
-
-    for i = 1, width do
-        if i <= filled then
-            write("#")
-        else
-            write("-")
-        end
-    end
-
-    write("]")
-end
-
--- BOOT
-term.setBackgroundColor(colors.black)
-term.setTextColor(colors.white)
-term.clear()
-
-center(math.floor(h / 2) - 2, "C Y B E R C O R E")
-center(math.floor(h / 2), "INITIALIZING NEURAL INTERFACE")
-center(math.floor(h / 2) + 2, "[                    ]")
-
-for i = 1, 20 do
-    term.setCursorPos(math.floor((w - 22) / 2) + i, math.floor(h / 2) + 2)
-    write("#")
-    sleep(0.08)
-end
-
-sleep(0.5)
-
--- MATRIX BACKGROUND
-local columns = {}
-for x = 1, w do
-    columns[x] = math.random(h)
-end
-
--- Main loop
-while running do
+local function clear()
     term.setBackgroundColor(colors.black)
+    term.setTextColor(colors.white)
     term.clear()
+end
 
-    -- Matrix rain
-    for x = 1, w do
-        local y = columns[x]
+local function text(x, y, str, color)
+    term.setCursorPos(x, y)
+    term.setTextColor(color or colors.white)
+    write(str)
+end
 
-        term.setTextColor(colors.lime)
-        term.setCursorPos(x, y)
-        write(randChar())
+local function box(x1, y1, x2, y2, bg)
+    term.setBackgroundColor(bg)
+    paintutils.drawFilledBox(x1, y1, x2, y2)
+end
+
+local function line(y, color)
+    term.setBackgroundColor(color)
+    term.setCursorPos(1, y)
+    write(string.rep(" ", w))
+end
+
+local function progress(x, y, width, value)
+    local filled = math.floor(width * value)
+
+    term.setBackgroundColor(colors.gray)
+    term.setCursorPos(x, y)
+    write(string.rep(" ", width))
+
+    term.setBackgroundColor(colors.cyan)
+    term.setCursorPos(x, y)
+    write(string.rep(" ", filled))
+end
+
+local function title(x, y, str)
+    text(x, y, str, colors.cyan)
+end
+
+local function status(x, y, name, value, color)
+    text(x, y, name, colors.lightGray)
+    text(x + #name + 2, y, value, color)
+end
+
+clear()
+
+local tick = 0
+
+while true do
+    tick = tick + 1
+
+    clear()
+
+    -- HEADER
+    box(1, 1, w, 4, colors.blue)
+
+    text(3, 2, "CYBERCORE", colors.white)
+    text(3, 3, "SYSTEM MONITOR", colors.lightBlue)
+
+    text(w - 17, 2, "ONLINE", colors.lime)
+    text(w - 17, 3, "ID " .. os.getComputerID(), colors.lightGray)
+
+    -- LEFT PANEL
+    local left = 2
+    local mid = math.floor(w / 2) - 1
+    local right = w - 2
+
+    box(left, 6, mid, 15, colors.black)
+
+    title(left + 2, 7, "SYSTEM STATUS")
+
+    status(left + 2, 9, "CPU", math.random(20, 90) .. "%", colors.lime)
+    status(left + 2, 10, "MEM", math.random(30, 80) .. "%", colors.cyan)
+    status(left + 2, 11, "TEMP", math.random(35, 55) .. " C", colors.orange)
+    status(left + 2, 12, "CORE", "STABLE", colors.lime)
+
+    progress(left + 2, 14, mid - left - 3, math.random() * 0.8 + 0.1)
+
+    -- RIGHT PANEL
+    box(mid + 2, 6, right, 15, colors.black)
+
+    title(mid + 4, 7, "NETWORK")
+
+    status(mid + 4, 9, "GATEWAY", "ONLINE", colors.lime)
+    status(mid + 4, 10, "LOCAL", "192.168.0.1", colors.cyan)
+    status(mid + 4, 11, "PACKETS", tostring(math.random(1000, 9999)), colors.white)
+    status(mid + 4, 12, "LATENCY", math.random(3, 30) .. " ms", colors.lime)
+
+    progress(mid + 4, 14, right - mid - 5, math.random())
+
+    -- GRAPH
+    box(2, 17, w - 1, h - 5, colors.black)
+
+    title(4, 18, "LIVE PROCESS LOAD")
+
+    local graphTop = 20
+    local graphBottom = h - 7
+
+    for x = 4, w - 3 do
+        local height = math.random(0, graphBottom - graphTop)
+        local y = graphBottom - height
 
         if math.random(3) == 1 then
-            term.setTextColor(colors.green)
-            local y2 = y - 1
-            if y2 > 0 then
-                term.setCursorPos(x, y2)
-                write(randChar())
-            end
-        end
-
-        columns[x] = y + 1
-
-        if columns[x] > h then
-            columns[x] = math.random(-10, 1)
+            text(x, y, "█", colors.cyan)
+        elseif math.random(2) == 1 then
+            text(x, y, "▌", colors.lightBlue)
         end
     end
 
-    -- Header
-    term.setBackgroundColor(colors.black)
-    term.setTextColor(colors.cyan)
-    term.setCursorPos(2, 2)
-    write("╔")
-    write(string.rep("═", w - 4))
-    write("╗")
+    -- SCAN LINE
+    local scanX = ((tick * 2) % (w - 8)) + 4
 
-    center(3, "C Y B E R C O R E   //   SYSTEM MONITOR")
-
-    term.setCursorPos(2, 4)
-    write("╚")
-    write(string.rep("═", w - 4))
-    write("╝")
-
-    -- System panel
-    local panelY = 6
-
-    term.setTextColor(colors.white)
-    term.setCursorPos(3, panelY)
-    write("SYSTEM STATUS")
-
-    term.setTextColor(colors.gray)
-    term.setCursorPos(3, panelY + 1)
-    write("Computer ID : ")
-
-    term.setTextColor(colors.cyan)
-    write(os.getComputerID())
-
-    term.setTextColor(colors.gray)
-    term.setCursorPos(3, panelY + 2)
-    write("Uptime      : ")
-
-    term.setTextColor(colors.cyan)
-    write(math.floor(os.clock()) .. "s")
-
-    term.setTextColor(colors.gray)
-    term.setCursorPos(3, panelY + 3)
-    write("Energy      : ")
-
-    term.setTextColor(colors.lime)
-    write(math.random(60, 100) .. "%")
-
-    -- CPU
-    term.setTextColor(colors.white)
-    term.setCursorPos(3, panelY + 5)
-    write("CPU LOAD")
-
-    local cpu = math.random(20, 98)
-
-    term.setTextColor(colors.cyan)
-    term.setCursorPos(3, panelY + 6)
-    write(cpu .. "% ")
-
-    bar(9, panelY + 6, 20, cpu / 100)
-
-    -- Memory
-    term.setTextColor(colors.white)
-    term.setCursorPos(3, panelY + 8)
-    write("MEMORY")
-
-    local mem = math.random(30, 95)
-
-    term.setTextColor(colors.cyan)
-    term.setCursorPos(3, panelY + 9)
-    write(mem .. "% ")
-
-    bar(9, panelY + 9, 20, mem / 100)
-
-    -- Network panel
-    local nx = math.floor(w / 2) + 2
-
-    term.setTextColor(colors.white)
-    term.setCursorPos(nx, panelY)
-    write("NETWORK")
-
-    local ips = {
-        "192.168.0.1",
-        "10.0.0.42",
-        "172.16.4.7",
-        "127.0.0.1"
-    }
-
-    for i = 1, 4 do
-        term.setCursorPos(nx, panelY + i)
-        term.setTextColor(colors.gray)
-        write("NODE ")
-
-        term.setTextColor(colors.cyan)
-        write(ips[i])
-
-        term.setTextColor(colors.lime)
-
-        if math.random(4) == 1 then
-            write(" [OPEN]")
-        else
-            write(" [ONLINE]")
-        end
+    for y = graphTop, graphBottom do
+        text(scanX, y, "│", colors.blue)
     end
 
-    -- Fake packet stream
-    term.setTextColor(colors.white)
-    term.setCursorPos(nx, panelY + 6)
-    write("PACKET STREAM")
+    -- FOOTER
+    box(1, h - 3, w, h, colors.blue)
 
-    for i = 1, 5 do
-        term.setCursorPos(nx, panelY + 6 + i)
-        term.setTextColor(colors.gray)
-        write("[" .. string.format("%04d", math.random(0, 9999)) .. "] ")
+    text(3, h - 2, "SYSTEM", colors.lightGray)
+    text(11, h - 2, "OPERATIONAL", colors.lime)
 
-        term.setTextColor(colors.lime)
+    text(3, h - 1, "UPTIME", colors.lightGray)
+    text(11, h - 1, string.format("%.0fs", os.clock()), colors.cyan)
 
-        local packet = ""
+    text(w - 20, h - 2, "SECURE LINK", colors.lime)
 
-        for j = 1, 8 do
-            packet = packet .. string.format("%02X", math.random(0, 255))
-
-            if j < 8 then
-                packet = packet .. " "
-            end
-        end
-
-        write(packet)
-    end
-
-    -- Bottom status
-    term.setTextColor(colors.cyan)
-
-    if h >= 20 then
-        term.setCursorPos(3, h - 2)
-        write("STATUS: ")
-
-        term.setTextColor(colors.lime)
-        write("ALL SYSTEMS NOMINAL")
-
-        term.setTextColor(colors.gray)
-        term.setCursorPos(3, h - 1)
-        write("Press CTRL+T to terminate.")
-    end
-
-    sleep(0.12)
+    sleep(0.25)
 end
